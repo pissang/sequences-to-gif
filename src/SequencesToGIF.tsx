@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Github, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,15 @@ interface FileWithPreview extends File {
 export default function SequencesToGif() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [converting, setConverting] = useState(false);
-  const [gifBlob, setGifBlob] = useState<Blob | null>(null);
+  // const [gifBlob, setGifBlob] = useState<Blob | null>(null);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const workerRef = useRef<Worker | null>(null);
+  const filesSorted = useMemo(() => {
+    return [...files].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true })
+    );
+  }, [files]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(
@@ -79,8 +84,10 @@ export default function SequencesToGif() {
     let width = 0;
     let height = 0;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    let idx = 0;
+    const transferables: Transferable[] = [];
+
+    for (const file of filesSorted) {
       const img = await loadImage(file);
       if (!width) {
         width = img.width;
@@ -89,11 +96,13 @@ export default function SequencesToGif() {
         canvas.height = height;
       }
       ctx.drawImage(img, 0, 0);
-      frames.push(ctx.getImageData(0, 0, width, height));
-      setProgress(Math.round(((i + 1) / files.length) * 90)); // Leave 10% for actual conversion
+      const imageData = ctx.getImageData(0, 0, width, height);
+      transferables.push(imageData.data.buffer);
+      frames.push(imageData);
+      setProgress(Math.round((idx++ / files.length) * 90)); // Leave 10% for actual conversion
     }
 
-    workerRef.current?.postMessage({ frames, width, height });
+    workerRef.current?.postMessage({ frames, width, height }, transferables);
   }
 
   function downloadGif() {
@@ -132,12 +141,12 @@ export default function SequencesToGif() {
           )}
         </div>
 
-        {files.length > 0 && (
+        {filesSorted.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2">Uploaded Files:</h2>
+            <h2 className="text-lg font-semibold mb-2">Uploaded files:</h2>
             <ScrollArea className="h-[300px] rounded-md border">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-                {files.map((file) => (
+                {filesSorted.map((file) => (
                   <div key={file.name} className="text-center">
                     <img
                       src={file.preview}

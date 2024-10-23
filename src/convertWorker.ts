@@ -7,9 +7,10 @@ self.onmessage = async function (e) {
   try {
     const gif = await gifski({
       frames,
-      fps: 30,
+      fps: 15,
       width,
       height,
+      max_threads: 16,
       quality: 100
     });
 
