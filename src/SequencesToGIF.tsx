@@ -146,14 +146,16 @@ export default function SequencesToGif() {
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">Uploaded files:</h2>
             <ScrollArea className="h-[300px] rounded-md border">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
                 {filesSorted.map((file) => (
                   <div key={file.name} className="text-center">
-                    <img
-                      src={file.preview}
-                      alt={file.name}
-                      className="w-full h-32 object-cover rounded-lg mb-2"
-                    />
+                    <div className="aspect-square w-full mb-2 overflow-hidden rounded-lg">
+                      <img
+                        src={file.preview}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     <p className="text-sm truncate">{file.name}</p>
                   </div>
                 ))}
