@@ -95,6 +95,7 @@ export default function SequencesToGif() {
         canvas.width = width;
         canvas.height = height;
       }
+      ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, width, height);
       transferables.push(imageData.data.buffer);
@@ -136,7 +137,7 @@ export default function SequencesToGif() {
             <p className="text-lg">Drop the files here ...</p>
           ) : (
             <p className="text-lg">
-              Drag 'n' drop some files here, or click to select files
+              Drop image sequences, or click to select images
             </p>
           )}
         </div>
