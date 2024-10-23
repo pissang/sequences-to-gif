@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Github, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-// @ts-ignore
-import gifski from 'gifski-wasm';
 
 interface FileWithPreview extends File {
   preview: string;
@@ -17,7 +15,8 @@ export default function SequencesToGif() {
   const [converting, setConverting] = useState(false);
   const [gifBlob, setGifBlob] = useState<Blob | null>(null);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
-  // const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const workerRef = useRef<Worker | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(
@@ -50,14 +49,36 @@ export default function SequencesToGif() {
     });
   }
 
+  useEffect(() => {
+    workerRef.current = new Worker(
+      new URL('./convertWorker', import.meta.url),
+      { type: 'module' }
+    );
+    workerRef.current.onmessage = (e) => {
+      if (e.data.gif) {
+        const blob = new Blob([e.data.gif], { type: 'image/gif' });
+        const url = URL.createObjectURL(blob);
+        setGifUrl(url);
+        setConverting(false);
+        setProgress(100);
+      } else if (e.data.error) {
+        console.error('Conversion error:', e.data.error);
+        setConverting(false);
+      }
+    };
+
+    return () => workerRef.current?.terminate();
+  }, []);
+
   async function handleConvert() {
     setConverting(true);
-    // setProgress(0);
+    setProgress(0);
     const frames: ImageData[] = [];
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
     let width = 0;
     let height = 0;
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const img = await loadImage(file);
@@ -69,21 +90,10 @@ export default function SequencesToGif() {
       }
       ctx.drawImage(img, 0, 0);
       frames.push(ctx.getImageData(0, 0, width, height));
-      // setProgress(Math.round(((i + 1) / files.length) * 100));
+      setProgress(Math.round(((i + 1) / files.length) * 90)); // Leave 10% for actual conversion
     }
-    const gif = await gifski({
-      frames,
-      fps: 30,
-      width,
-      height,
-      quality: 100
-    });
-    setConverting(false);
-    // setProgress(0);
-    const blob = new Blob([gif], { type: 'image/gif' });
-    const url = URL.createObjectURL(blob);
-    setGifBlob(blob);
-    setGifUrl(url);
+
+    workerRef.current?.postMessage({ frames, width, height });
   }
 
   function downloadGif() {
@@ -99,7 +109,7 @@ export default function SequencesToGif() {
     <div className="min-h-screen flex flex-col bg-background">
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-8">
-          Sequences to GIF
+          Image Sequences to GIF
         </h1>
 
         <div
@@ -150,6 +160,7 @@ export default function SequencesToGif() {
           {converting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Converting
               {/* Converting... {progress}% */}
             </>
           ) : (
@@ -175,7 +186,7 @@ export default function SequencesToGif() {
       <footer className="bg-muted py-4">
         <div className="container mx-auto px-4 flex justify-between items-center">
           <a
-            href="https://github.com"
+            href="https://github.com/pissang/sequences-to-gif"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center hover:text-primary"
@@ -184,7 +195,10 @@ export default function SequencesToGif() {
             GitHub
           </a>
           <div>
-            <a href="#" className="hover:text-primary mr-4">
+            <a
+              href="https://www.figma.com/community/plugin/1264600219316901594/vector-to-3d"
+              className="hover:text-primary mr-4"
+            >
               Vector to 3D
             </a>
           </div>
