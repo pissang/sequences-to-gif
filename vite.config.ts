@@ -15,5 +15,8 @@ export default defineConfig({
   },
   server: {
     https: true
+  },
+  worker: {
+    format: 'es'
   }
 });
