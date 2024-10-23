@@ -31,7 +31,12 @@ export default function SequencesToGif() {
   const [gifSize, setGifSize] = useState<string | null>(null);
   const [originalWidth, setOriginalWidth] = useState(0);
   const [originalHeight, setOriginalHeight] = useState(0);
-  const [fps, setFps] = useState(30);
+  const [sequenceFps, setSequenceFps] = useState(30);
+  const [gifFps, setGifFps] = useState(20);
+
+  const frameDownsample = useMemo(() => {
+    return Math.max(1, Math.round(sequenceFps / gifFps));
+  }, [sequenceFps, gifFps]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(
@@ -113,18 +118,21 @@ export default function SequencesToGif() {
     let idx = 0;
     const transferables: Transferable[] = [];
 
-    for (const file of filesSorted) {
+    for (let i = 0; i < filesSorted.length; i += frameDownsample) {
+      const file = filesSorted[i];
       const img = await loadImage(file);
       ctx.clearRect(0, 0, gifWidth, gifHeight);
       ctx.drawImage(img, 0, 0, gifWidth, gifHeight);
       const imageData = ctx.getImageData(0, 0, gifWidth, gifHeight);
       transferables.push(imageData.data.buffer);
       frames.push(imageData);
-      setProgress(Math.round((idx++ / files.length) * 90)); // Leave 10% for actual conversion
+      setProgress(
+        Math.round((idx++ / (filesSorted.length / frameDownsample)) * 90)
+      ); // Leave 10% for actual conversion
     }
 
     workerRef.current?.postMessage(
-      { frames, gifWidth, gifHeight, quality, fps },
+      { frames, gifWidth, gifHeight, quality, sequenceFps, gifFps },
       transferables
     );
   }
@@ -221,19 +229,33 @@ export default function SequencesToGif() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Label htmlFor="fps" className="w-32">
+                <Label htmlFor="sequenceFps" className="w-32">
                   FPS:
                 </Label>
                 <Input
-                  id="fps"
+                  id="sequenceFps"
                   type="number"
-                  value={fps}
+                  value={sequenceFps}
                   onChange={(e) =>
-                    setFps(Math.min(Math.max(Number(e.target.value), 1), 50))
+                    setSequenceFps(
+                      Math.min(Math.max(Number(e.target.value), 1), 60)
+                    )
                   }
                   className="w-24"
                   min={1}
-                  max={50}
+                  max={60}
+                />
+                <span className="text-sm text-muted-foreground">→</span>
+                <Input
+                  id="gifFps"
+                  type="number"
+                  value={gifFps}
+                  onChange={(e) =>
+                    setGifFps(Math.min(Math.max(Number(e.target.value), 1), 50))
+                  }
+                  className="w-24"
+                  min={1}
+                  max={sequenceFps}
                 />
                 <span className="text-sm text-muted-foreground">
                   frames/sec
@@ -247,7 +269,7 @@ export default function SequencesToGif() {
                 <Slider
                   id="quality"
                   min={1}
-                  max={20}
+                  max={100}
                   step={1}
                   value={[quality]}
                   onValueChange={(value) => setQuality(value[0])}
