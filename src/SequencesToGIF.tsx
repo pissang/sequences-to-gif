@@ -5,6 +5,9 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, Github, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 
 interface FileWithPreview extends File {
   preview: string;
@@ -22,6 +25,13 @@ export default function SequencesToGif() {
       a.name.localeCompare(b.name, undefined, { numeric: true })
     );
   }, [files]);
+  const [gifWidth, setGifWidth] = useState(500);
+  const [gifHeight, setGifHeight] = useState(500);
+  const [quality, setQuality] = useState(100);
+  const [gifSize, setGifSize] = useState<string | null>(null);
+  const [originalWidth, setOriginalWidth] = useState(0);
+  const [originalHeight, setOriginalHeight] = useState(0);
+  const [fps, setFps] = useState(30);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(
@@ -31,6 +41,18 @@ export default function SequencesToGif() {
         })
       )
     );
+
+    // Set GIF dimensions based on the first image
+    if (acceptedFiles.length > 0) {
+      const img = new Image();
+      img.onload = () => {
+        setOriginalWidth(img.width);
+        setOriginalHeight(img.height);
+        setGifWidth(img.width);
+        setGifHeight(img.height);
+      };
+      img.src = URL.createObjectURL(acceptedFiles[0]);
+    }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -66,6 +88,10 @@ export default function SequencesToGif() {
         setGifUrl(url);
         setConverting(false);
         setProgress(100);
+
+        // Calculate and set the file size
+        const sizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+        setGifSize(`${sizeMB} MB`);
       } else if (e.data.error) {
         console.error('Conversion error:', e.data.error);
         setConverting(false);
@@ -80,30 +106,27 @@ export default function SequencesToGif() {
     setProgress(0);
     const frames: ImageData[] = [];
     const canvas = document.createElement('canvas');
+    canvas.width = gifWidth;
+    canvas.height = gifHeight;
     const ctx = canvas.getContext('2d')!;
-    let width = 0;
-    let height = 0;
 
     let idx = 0;
     const transferables: Transferable[] = [];
 
     for (const file of filesSorted) {
       const img = await loadImage(file);
-      if (!width) {
-        width = img.width;
-        height = img.height;
-        canvas.width = width;
-        canvas.height = height;
-      }
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, width, height);
+      ctx.clearRect(0, 0, gifWidth, gifHeight);
+      ctx.drawImage(img, 0, 0, gifWidth, gifHeight);
+      const imageData = ctx.getImageData(0, 0, gifWidth, gifHeight);
       transferables.push(imageData.data.buffer);
       frames.push(imageData);
       setProgress(Math.round((idx++ / files.length) * 90)); // Leave 10% for actual conversion
     }
 
-    workerRef.current?.postMessage({ frames, width, height }, transferables);
+    workerRef.current?.postMessage(
+      { frames, gifWidth, gifHeight, quality, fps },
+      transferables
+    );
   }
 
   function downloadGif() {
@@ -143,25 +166,99 @@ export default function SequencesToGif() {
         </div>
 
         {filesSorted.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2">Uploaded files:</h2>
-            <ScrollArea className="h-[300px] rounded-md border">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
-                {filesSorted.map((file) => (
-                  <div key={file.name} className="text-center">
-                    <div className="aspect-square w-full mb-2 overflow-hidden rounded-lg">
-                      <img
-                        src={file.preview}
-                        alt={file.name}
-                        className="w-full h-full object-cover"
-                      />
+          <>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-2">Uploaded files:</h2>
+              <ScrollArea className="h-[300px] rounded-md border">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
+                  {filesSorted.map((file) => (
+                    <div key={file.name} className="text-center">
+                      <div className="aspect-square w-full mb-2 overflow-hidden rounded-lg">
+                        <img
+                          src={file.preview}
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <p className="text-sm truncate">{file.name}</p>
                     </div>
-                    <p className="text-sm truncate">{file.name}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="gifWidth" className="w-32">
+                  GIF Size:
+                </Label>
+                <Input
+                  id="gifWidth"
+                  type="number"
+                  value={gifWidth}
+                  onChange={(e) =>
+                    setGifWidth(Math.min(Number(e.target.value), originalWidth))
+                  }
+                  className="w-24"
+                  min={100}
+                  max={originalWidth}
+                />
+                <span className="text-sm text-muted-foreground">×</span>
+                <Input
+                  id="gifHeight"
+                  type="number"
+                  value={gifHeight}
+                  onChange={(e) =>
+                    setGifHeight(
+                      Math.min(Number(e.target.value), originalHeight)
+                    )
+                  }
+                  className="w-24"
+                  min={100}
+                  max={originalHeight}
+                />
+                <span className="text-sm text-muted-foreground">px</span>
               </div>
-            </ScrollArea>
-          </div>
+
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="fps" className="w-32">
+                  FPS:
+                </Label>
+                <Input
+                  id="fps"
+                  type="number"
+                  value={fps}
+                  onChange={(e) =>
+                    setFps(Math.min(Math.max(Number(e.target.value), 1), 50))
+                  }
+                  className="w-24"
+                  min={1}
+                  max={50}
+                />
+                <span className="text-sm text-muted-foreground">
+                  frames/sec
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="quality" className="w-32">
+                  Quality:
+                </Label>
+                <Slider
+                  id="quality"
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={[quality]}
+                  onValueChange={(value) => setQuality(value[0])}
+                  className="w-64"
+                />
+                <span className="w-12 text-sm text-muted-foreground">
+                  {quality}
+                </span>
+              </div>
+            </div>
+          </>
         )}
 
         <Button
@@ -188,6 +285,11 @@ export default function SequencesToGif() {
               alt="Generated GIF"
               className="mx-auto max-w-full h-auto"
             />
+            {gifSize && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                File size: {gifSize}
+              </p>
+            )}
             <Button onClick={downloadGif} className="mt-4">
               Download GIF
             </Button>

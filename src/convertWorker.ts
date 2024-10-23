@@ -1,21 +1,23 @@
 // @ts-ignore
 import gifski from 'gifski-wasm/multi-thread';
 
-self.onmessage = async function (e) {
-  const { frames, width, height } = e.data;
+self.onmessage = async (e) => {
+  const { frames, gifWidth, gifHeight, quality, fps } = e.data;
 
   try {
     const gif = await gifski({
       frames,
-      fps: 15,
-      width,
-      height,
+      fps,
+      width: gifWidth,
+      height: gifHeight,
       max_threads: 16,
-      quality: 100
+      quality
     });
 
     self.postMessage({ gif });
-  } catch (error: any) {
-    self.postMessage({ error: error.message });
+  } catch (error) {
+    self.postMessage({
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 };
