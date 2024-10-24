@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Github, Loader2 } from 'lucide-react';
+import { Upload, Github, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,7 @@ export default function SequencesToGif() {
   }, [sequenceFps, gifFps]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    files.forEach((file) => URL.revokeObjectURL(file.preview))
     setFiles(
       acceptedFiles.map((file) =>
         Object.assign(file, {
@@ -68,9 +69,9 @@ export default function SequencesToGif() {
     }
   });
 
-  useEffect(() => {
-    return () => files.forEach((file) => URL.revokeObjectURL(file.preview));
-  }, [files]);
+  // useEffect(() => {
+  //   return () => files.forEach((file) => URL.revokeObjectURL(file.preview));
+  // }, [files]);
 
   function loadImage(file: FileWithPreview) {
     return new Promise<HTMLImageElement>((resolve) => {
@@ -149,6 +150,11 @@ export default function SequencesToGif() {
     }
   }
 
+  function handleDelete(currentFile: File) {
+    URL.revokeObjectURL(currentFile.preview)
+    setFiles(files.filter((item) => item.name !== currentFile.name));
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <main className="flex-grow container mx-auto px-4 py-8">
@@ -183,7 +189,11 @@ export default function SequencesToGif() {
               <ScrollArea className="h-[300px] rounded-md border">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
                   {filesSorted.map((file) => (
-                    <div key={file.name} className="text-center">
+                    <div key={file.name} className="relative text-center group">
+                      <Trash2
+                        onClick={()=>{handleDelete(file)}}
+                        className="hidden group-hover:block h-5 w-5 text-muted-foreground absolute right-0 top-0 cursor-pointer"
+                      />
                       <div className="aspect-square w-full mb-2 overflow-hidden rounded-lg">
                         <img
                           src={file.preview}
