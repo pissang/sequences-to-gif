@@ -47,8 +47,7 @@ const SequencesToGIF = () => {
     const transferables: Transferable[] = [];
     setConverting(true);
 
-    const downsampleRatio = Math.max(1, opts.sequenceFps / opts.outputFps);
-    for (let i = 0; i < opts.files.length; i = Math.ceil(i + downsampleRatio)) {
+    for (let i = 0; i < opts.files.length; i++) {
       const file = opts.files[i];
       const img = await loadImage(file);
       ctx.clearRect(0, 0, opts.width, opts.height);
@@ -64,7 +63,6 @@ const SequencesToGIF = () => {
         width: opts.width,
         height: opts.height,
         quality: opts.quality,
-        sequenceFps: opts.sequenceFps,
         outputFps: opts.outputFps
       },
       transferables

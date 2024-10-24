@@ -22,7 +22,6 @@ export interface EncodeOpts {
   width: number;
   height: number;
   quality: number;
-  sequenceFps: number;
   outputFps: number;
 }
 
@@ -39,7 +38,7 @@ const SequencesToAnimated: FC<{
   useEffect(() => {
     let url: string | null = null;
     if (encodedBlob) {
-      setOutputSize(`${encodedBlob.size / 1024 / 1024} MB`);
+      setOutputSize(encodedBlob.size / 1024 / 1024);
       url = URL.createObjectURL(encodedBlob);
       setOutputUrl(url);
     }
@@ -58,7 +57,7 @@ const SequencesToAnimated: FC<{
   const [outputWidth, setOutputWidth] = useState(500);
   const [outputHeight, setOutputHeight] = useState(500);
   const [quality, setQuality] = useState(100);
-  const [outputSize, setOutputSize] = useState<string | null>(null);
+  const [outputSize, setOutputSize] = useState<number>(0);
   const [originalWidth, setOriginalWidth] = useState(0);
   const [originalHeight, setOriginalHeight] = useState(0);
   const [sequenceFps, setSequenceFps] = useState(30);
@@ -257,12 +256,18 @@ const SequencesToAnimated: FC<{
         <Button
           onClick={() => {
             logEvent('Conversion', 'Started conversion');
+
+            const downsampleRatio = Math.max(1, sequenceFps / outputFps);
+            const filesDownsampled = [];
+            for (let i = 0; i < filesSorted.length; i += downsampleRatio) {
+              filesDownsampled.push(filesSorted[Math.ceil(i)]);
+            }
+
             startEncode({
-              files: filesSorted,
+              files: filesDownsampled,
               width: outputWidth,
               height: outputHeight,
               quality,
-              sequenceFps,
               outputFps
             });
           }}
@@ -290,7 +295,7 @@ const SequencesToAnimated: FC<{
             />
             {outputSize && (
               <p className="mt-2 text-sm text-muted-foreground">
-                File size: {outputSize}
+                File size: {outputSize.toFixed(2)} MB
               </p>
             )}
             <Button onClick={downloadOutput} className="mt-4">
