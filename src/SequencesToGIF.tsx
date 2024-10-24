@@ -10,10 +10,9 @@ const SequencesToGIF = () => {
   const [converting, setConverting] = useState(false);
 
   useEffect(() => {
-    workerRef.current = new Worker(
-      new URL('./gifEncodeWorker', import.meta.url),
-      { type: 'module' }
-    );
+    workerRef.current = new Worker(new URL('./worker/gif', import.meta.url), {
+      type: 'module'
+    });
     workerRef.current.onmessage = (e) => {
       if (e.data.gif) {
         const blob = new Blob([e.data.gif], { type: 'image/gif' });
@@ -47,8 +46,7 @@ const SequencesToGIF = () => {
     const transferables: Transferable[] = [];
     setConverting(true);
 
-    for (let i = 0; i < opts.files.length; i++) {
-      const file = opts.files[i];
+    for (let file of opts.files) {
       const img = await loadImage(file);
       ctx.clearRect(0, 0, opts.width, opts.height);
       ctx.drawImage(img, 0, 0, opts.width, opts.height);

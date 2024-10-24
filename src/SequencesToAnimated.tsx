@@ -61,7 +61,7 @@ const SequencesToAnimated: FC<{
   const [originalWidth, setOriginalWidth] = useState(0);
   const [originalHeight, setOriginalHeight] = useState(0);
   const [sequenceFps, setSequenceFps] = useState(30);
-  const [outputFps, setOutputFps] = useState(20);
+  const [outputFps, setOutputFps] = useState(30);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     files.forEach((file) => URL.revokeObjectURL(file.preview));
