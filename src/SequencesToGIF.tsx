@@ -40,7 +40,7 @@ export default function SequencesToGif() {
   }, [sequenceFps, gifFps]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    files.forEach((file) => URL.revokeObjectURL(file.preview))
+    files.forEach((file) => URL.revokeObjectURL(file.preview));
     setFiles(
       acceptedFiles.map((file) =>
         Object.assign(file, {
@@ -68,10 +68,6 @@ export default function SequencesToGif() {
       'image/*': []
     }
   });
-
-  // useEffect(() => {
-  //   return () => files.forEach((file) => URL.revokeObjectURL(file.preview));
-  // }, [files]);
 
   function loadImage(file: FileWithPreview) {
     return new Promise<HTMLImageElement>((resolve) => {
@@ -150,8 +146,8 @@ export default function SequencesToGif() {
     }
   }
 
-  function handleDelete(currentFile: File) {
-    URL.revokeObjectURL(currentFile.preview)
+  function handleDelete(currentFile: FileWithPreview) {
+    URL.revokeObjectURL(currentFile.preview);
     setFiles(files.filter((item) => item.name !== currentFile.name));
   }
 
@@ -191,8 +187,10 @@ export default function SequencesToGif() {
                   {filesSorted.map((file) => (
                     <div key={file.name} className="relative text-center group">
                       <Trash2
-                        onClick={()=>{handleDelete(file)}}
-                        className="hidden group-hover:block h-5 w-5 text-muted-foreground absolute right-0 top-0 cursor-pointer"
+                        onClick={() => {
+                          handleDelete(file);
+                        }}
+                        className="hidden group-hover:block h-4 w-4 absolute right-2 top-2 cursor-pointer text-white opacity-0 group-hover:opacity-50"
                       />
                       <div className="aspect-square w-full mb-2 overflow-hidden rounded-lg">
                         <img
