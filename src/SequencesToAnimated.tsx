@@ -27,10 +27,11 @@ export interface EncodeOpts {
 
 const SequencesToAnimated: FC<{
   title: string;
+  format: 'gif' | 'webp' | 'png';
   startEncode: (opts: EncodeOpts) => void;
   converting: boolean;
   encodedBlob: Blob | null;
-}> = ({ title, startEncode, converting, encodedBlob }) => {
+}> = ({ title, format, startEncode, converting, encodedBlob }) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
 
@@ -98,7 +99,7 @@ const SequencesToAnimated: FC<{
     if (outputUrl) {
       const a = document.createElement('a');
       a.href = outputUrl;
-      a.download = 'output.gif';
+      a.download = `output.${format}`;
       a.click();
     }
   }
@@ -287,10 +288,10 @@ const SequencesToAnimated: FC<{
 
         {outputUrl && (
           <div className="mt-6 text-center">
-            <h2 className="text-lg font-semibold mb-2">Generated GIF:</h2>
+            <h2 className="text-lg font-semibold mb-2">Generated:</h2>
             <img
               src={outputUrl}
-              alt="Generated GIF"
+              alt="Generated"
               className="mx-auto max-w-full h-auto"
             />
             {outputSize && (
@@ -299,7 +300,7 @@ const SequencesToAnimated: FC<{
               </p>
             )}
             <Button onClick={downloadOutput} className="mt-4">
-              Download GIF
+              Download
             </Button>
           </div>
         )}

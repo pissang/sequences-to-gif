@@ -24,7 +24,8 @@
     "react-dropzone": "^14.2.10",
     "react-ga4": "^2.1.0",
     "tailwind-merge": "^2.5.4",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "upng-js": "^2.1.0"
   },
   "devDependencies": {
     "@types/react": "^17.0.83",
