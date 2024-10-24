@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
-import SequencesToGif from './SequencesToGIF';
+import SequencesToGif from './SequencesToAnimated';
 import { initGA, logPageView } from './utils/analytics';
+import Footer from './Footer';
+import SequencesToGIF from './SequencesToGIF';
 
 const MEASUREMENT_ID = 'G-281ZPF08QH'; // Replace with your actual Measurement ID
 
@@ -10,7 +12,12 @@ const App: React.FC = () => {
     logPageView();
   }, []);
 
-  return <SequencesToGif />;
+  return (
+    <>
+      <SequencesToGIF />
+      <Footer />
+    </>
+  );
 };
 
 export default App;
