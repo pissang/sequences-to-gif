@@ -4,19 +4,21 @@ import SequencesToAnimated, {
   FileWithPreview
 } from './SequencesToAnimated';
 
-const SequencesToGIF = () => {
-  const [gifBlob, setGifBlob] = useState<Blob | null>(null);
+const SequencesToWebP = () => {
+  const [webpBlob, setWebpBlob] = useState<Blob | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const [converting, setConverting] = useState(false);
 
   useEffect(() => {
-    workerRef.current = new Worker(new URL('./worker/gif', import.meta.url), {
+    workerRef.current = new Worker(new URL('./worker/webp', import.meta.url), {
       type: 'module'
     });
     workerRef.current.onmessage = (e) => {
-      if (e.data.gif) {
-        const blob = new Blob([e.data.gif], { type: 'image/gif' });
-        setGifBlob(blob);
+      if (e.data.webp) {
+        const blob = new Blob([new Uint8Array(e.data.webp)], {
+          type: 'image/webp'
+        });
+        setWebpBlob(blob);
       } else if (e.data.error) {
         console.error('Conversion error:', e.data.error);
       }
@@ -37,7 +39,7 @@ const SequencesToGIF = () => {
     });
   }
   async function startEncode(opts: EncodeOpts) {
-    const frames: ImageData[] = [];
+    const frames: ArrayBuffer[] = [];
     const canvas = document.createElement('canvas');
     canvas.width = opts.width;
     canvas.height = opts.height;
@@ -50,9 +52,17 @@ const SequencesToGIF = () => {
       const img = await loadImage(file);
       ctx.clearRect(0, 0, opts.width, opts.height);
       ctx.drawImage(img, 0, 0, opts.width, opts.height);
-      const imageData = ctx.getImageData(0, 0, opts.width, opts.height);
-      transferables.push(imageData.data.buffer);
-      frames.push(imageData);
+      const ab = await new Promise<ArrayBuffer>((resolve) => {
+        canvas.toBlob(
+          (blob) => {
+            blob?.arrayBuffer().then(resolve);
+          },
+          'image/webp',
+          1
+        );
+      });
+      frames.push(ab);
+      transferables.push(ab);
     }
 
     workerRef.current?.postMessage(
@@ -69,13 +79,12 @@ const SequencesToGIF = () => {
 
   return (
     <SequencesToAnimated
-      title="Image Sequences to GIF"
+      title="Image Sequences to WebP"
       startEncode={startEncode}
-      encodedBlob={gifBlob}
+      encodedBlob={webpBlob}
       converting={converting}
-      format="gif"
     />
   );
 };
 
-export default SequencesToGIF;
+export default SequencesToWebP;

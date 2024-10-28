@@ -4,19 +4,21 @@ import SequencesToAnimated, {
   FileWithPreview
 } from './SequencesToAnimated';
 
-const SequencesToGIF = () => {
-  const [gifBlob, setGifBlob] = useState<Blob | null>(null);
+const SequencesToAPNG = () => {
+  const [webpBlob, setWebpBlob] = useState<Blob | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const [converting, setConverting] = useState(false);
 
   useEffect(() => {
-    workerRef.current = new Worker(new URL('./worker/gif', import.meta.url), {
+    workerRef.current = new Worker(new URL('./worker/apng', import.meta.url), {
       type: 'module'
     });
     workerRef.current.onmessage = (e) => {
-      if (e.data.gif) {
-        const blob = new Blob([e.data.gif], { type: 'image/gif' });
-        setGifBlob(blob);
+      if (e.data.apng) {
+        const blob = new Blob([new Uint8Array(e.data.apng)], {
+          type: 'image/png'
+        });
+        setWebpBlob(blob);
       } else if (e.data.error) {
         console.error('Conversion error:', e.data.error);
       }
@@ -37,7 +39,7 @@ const SequencesToGIF = () => {
     });
   }
   async function startEncode(opts: EncodeOpts) {
-    const frames: ImageData[] = [];
+    const frames: ArrayBuffer[] = [];
     const canvas = document.createElement('canvas');
     canvas.width = opts.width;
     canvas.height = opts.height;
@@ -52,7 +54,7 @@ const SequencesToGIF = () => {
       ctx.drawImage(img, 0, 0, opts.width, opts.height);
       const imageData = ctx.getImageData(0, 0, opts.width, opts.height);
       transferables.push(imageData.data.buffer);
-      frames.push(imageData);
+      frames.push(imageData.data.buffer);
     }
 
     workerRef.current?.postMessage(
@@ -69,13 +71,13 @@ const SequencesToGIF = () => {
 
   return (
     <SequencesToAnimated
-      title="Image Sequences to GIF"
+      title="Image Sequences to APNG"
       startEncode={startEncode}
-      encodedBlob={gifBlob}
+      encodedBlob={webpBlob}
       converting={converting}
-      format="gif"
+      format="png"
     />
   );
 };
 
-export default SequencesToGIF;
+export default SequencesToAPNG;
