@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { logEvent } from './utils/analytics';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 export interface FileWithPreview extends File {
   preview: string;
@@ -93,6 +94,16 @@ const SequencesToAnimated: FC<{
     }
   });
 
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(files);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setFiles(items);
+  };
+
   function downloadOutput() {
     logEvent('Download', 'Downloaded GIF');
     if (outputUrl) {
@@ -138,26 +149,50 @@ const SequencesToAnimated: FC<{
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-2">Uploaded files:</h2>
               <ScrollArea className="h-[300px] rounded-md border">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
-                  {files.map((file) => (
-                    <div key={file.name} className="relative text-center group">
-                      <Trash2
-                        onClick={() => {
-                          handleDelete(file);
-                        }}
-                        className="hidden group-hover:block h-4 w-4 absolute right-2 top-2 cursor-pointer text-white opacity-0 group-hover:opacity-50"
-                      />
-                      <div className="aspect-square w-full mb-2 overflow-hidden rounded-lg">
-                        <img
-                          src={file.preview}
-                          alt={file.name}
-                          className="w-full h-full object-cover"
-                        />
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="sequences" direction="horizontal">
+                    {(provided) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4"
+                      >
+                        {files.map((file, index) => (
+                          <Draggable
+                            key={file.name}
+                            draggableId={file.name}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="relative text-center group"
+                              >
+                                <Trash2
+                                  onClick={() => {
+                                    handleDelete(file);
+                                  }}
+                                  className="hidden group-hover:block h-4 w-4 absolute right-2 top-2 cursor-pointer text-white opacity-0 group-hover:opacity-50"
+                                />
+                                <div className="aspect-square w-full mb-2 overflow-hidden rounded-lg">
+                                  <img
+                                    src={file.preview}
+                                    alt={file.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <p className="text-sm truncate">{file.name}</p>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                      <p className="text-sm truncate">{file.name}</p>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
               </ScrollArea>
             </div>
 
