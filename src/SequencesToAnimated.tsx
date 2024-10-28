@@ -50,11 +50,6 @@ const SequencesToAnimated: FC<{
     };
   }, [encodedBlob]);
 
-  const filesSorted = useMemo(() => {
-    return [...files].sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, { numeric: true })
-    );
-  }, [files]);
   const [outputWidth, setOutputWidth] = useState(500);
   const [outputHeight, setOutputHeight] = useState(500);
   const [quality, setQuality] = useState(100);
@@ -67,11 +62,15 @@ const SequencesToAnimated: FC<{
   const onDrop = useCallback((acceptedFiles: File[]) => {
     files.forEach((file) => URL.revokeObjectURL(file.preview));
     setFiles(
-      acceptedFiles.map((file) =>
-        Object.assign(file, {
-          preview: URL.createObjectURL(file)
-        })
-      )
+      acceptedFiles
+        .map((file) =>
+          Object.assign(file, {
+            preview: URL.createObjectURL(file)
+          })
+        )
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { numeric: true })
+        )
     );
 
     // Set GIF dimensions based on the first image
@@ -134,13 +133,13 @@ const SequencesToAnimated: FC<{
           )}
         </div>
 
-        {filesSorted.length > 0 && (
+        {files.length > 0 && (
           <>
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-2">Uploaded files:</h2>
               <ScrollArea className="h-[300px] rounded-md border">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
-                  {filesSorted.map((file) => (
+                  {files.map((file) => (
                     <div key={file.name} className="relative text-center group">
                       <Trash2
                         onClick={() => {
@@ -260,8 +259,8 @@ const SequencesToAnimated: FC<{
 
             const downsampleRatio = Math.max(1, sequenceFps / outputFps);
             const filesDownsampled = [];
-            for (let i = 0; i < filesSorted.length; i += downsampleRatio) {
-              filesDownsampled.push(filesSorted[Math.ceil(i)]);
+            for (let i = 0; i < files.length; i += downsampleRatio) {
+              filesDownsampled.push(files[Math.ceil(i)]);
             }
 
             startEncode({
