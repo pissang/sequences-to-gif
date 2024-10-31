@@ -41,7 +41,7 @@ const SequencesToGIF = () => {
     const canvas = document.createElement('canvas');
     canvas.width = opts.width;
     canvas.height = opts.height;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
     const transferables: Transferable[] = [];
     setConverting(true);
