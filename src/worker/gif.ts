@@ -2,7 +2,15 @@
 import gifski from 'gifski-wasm/multi-thread';
 
 self.onmessage = async (e) => {
-  const { frames, width, height, quality, outputFps } = e.data;
+  const {
+    frames,
+    width,
+    height,
+    resizeWidth,
+    resizeHeight,
+    quality,
+    outputFps
+  } = e.data;
   console.log('outputFps', outputFps);
   console.log('frames', frames.length);
   console.log('width', width);
@@ -14,6 +22,8 @@ self.onmessage = async (e) => {
       fps: outputFps,
       width,
       height,
+      resizeWidth,
+      resizeHeight,
       max_threads: 16,
       quality
     });

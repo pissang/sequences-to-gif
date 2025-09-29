@@ -60,6 +60,8 @@ const SequencesToGIF = () => {
         frames,
         width: opts.width,
         height: opts.height,
+        resizeWidth: opts.width,
+        resizeHeight: opts.height,
         quality: opts.quality,
         outputFps: opts.outputFps
       },

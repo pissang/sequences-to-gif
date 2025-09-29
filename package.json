@@ -17,7 +17,7 @@
     "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "gifski-wasm": "^2.0.2",
+    "gifski-wasm": "^2.2.0",
     "lucide-react": "^0.453.0",
     "node-webpmux": "^3.2.0",
     "react": "^18.3.1",
